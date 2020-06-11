@@ -12,6 +12,8 @@ use std::any::Any;
 use std::fs;
 
 //Constants:
+static ADD: &str = "Add";
+static REMOVE: &str = "Remove";
 static BACK: &str = "Back";
 static START_MENU: &str = "Main menu";
 static DEFAULT_PROMPT: &str = "What do you want to do?";
@@ -41,7 +43,7 @@ macro_rules! str_eq {
     }
 }
 
-fn read_user_from_file<P: AsRef<Path>>(path: P) -> Result<HashMap<String, Value>, Box<dyn Error>> {
+fn read_json_from_file<P: AsRef<Path>>(path: P) -> Result<HashMap<String, Value>, Box<dyn Error>> {
     // Open the file in read-only mode with buffer.
     let file = File::open(path)?;
     let reader = BufReader::new(file);
@@ -80,7 +82,7 @@ fn revert_prompt(hm: &mut HashMap<String, Value>, backup_path:String, settings_f
     if Confirm::new().with_prompt("Are you sure you want to load backup? Any current changes will be deleted").interact().unwrap() {
         //Load backup
         println!("Backup loaded");
-        let backup = read_user_from_file(backup_path).unwrap();
+        let backup = read_json_from_file(backup_path).unwrap();
         write(&mut backup.clone(),settings_folder.as_str());
         backup
     } else {
@@ -92,15 +94,15 @@ fn revert_prompt(hm: &mut HashMap<String, Value>, backup_path:String, settings_f
 
 fn main() {
     //Load and set configs
-    let config = read_user_from_file("./src/config.json").unwrap();
+    let config = read_json_from_file("./src/config.json").unwrap();
     let settings_folder : String = from_value(config.get("settings_folder_path").unwrap().clone()).unwrap();
     let settings_path: String = (settings_folder +"settings.json");
 
     //Load Schema
-    //let schema = read_user_from_file("./src/wt_schema.json").unwrap();
+    //let schema = read_json_from_file("./src/wt_schema.json").unwrap();
 
     //Load wt settings
-    let mut hm = read_user_from_file(settings_path.clone()).unwrap();
+    let mut hm = read_json_from_file(settings_path.clone()).unwrap();
 
     //Do backup
     let backup_path = settings_path.clone()+".backup";
@@ -121,10 +123,13 @@ fn main() {
     let mut l = gen_menu_path![
         START_MENU;"Edit","Revert","Save","Exit";
         "Edit";BACK,"Settings","Profiles","Schemes";
-        "Settings"; BACK;
-        "Profiles"; BACK;
-        "Schemes" ; BACK
+        "Settings"; ADD,REMOVE,BACK;
+        "Profiles"; ADD,REMOVE,BACK;
+        "Schemes" ; ADD,REMOVE,BACK
     ];
+
+    //Add
+    //Remove
 
     //Set start position
     let mut current_menu_stack = vec![String::from(START_MENU)];
@@ -139,10 +144,32 @@ fn main() {
             b if str_eq!(b, "Save") => { save_prompt(&mut hm, backup_path.clone()); continue; },
             b if str_eq!(b, "Revert") => { hm = revert_prompt(&mut hm, backup_path.clone(), settings_path.clone()); continue; },
             b if str_eq!(b, BACK) => { current_menu_stack.pop(); continue; },
+            b if str_eq!(b, ADD) => {
+                m_setting_types(&mut current_menu_stack,
+                                || println!("{:#?}", "ASE"),
+                                || println!("{:#?}", "APR"),
+                                || println!("{:#?}", "ASC")
+                ); continue; },
+            b if str_eq!(b, REMOVE) => {
+                m_setting_types(&mut current_menu_stack,
+                                || println!("{:#?}", "RSE"),
+                                || println!("{:#?}", "RPR"),
+                                || println!("{:#?}", "RSC")
+                ); continue; },
             b if str_eq!(b, "Exit") => { break; },
             _ => { current_menu_stack.push(a); continue; }
         };
     }
+}
+
+fn m_setting_types<F1,F2,F3>(menu_stack: &mut Vec<String>, settings_fun: F1, profiles_fun: F2, schemes_fun: F3)
+    where F1:FnOnce(),F2:FnOnce(),F3:FnOnce() {
+        match menu_stack.last().unwrap() {
+            b if str_eq!(b, "Settings") => { settings_fun() },
+            b if str_eq!(b, "Profiles") => { profiles_fun() },
+            b if str_eq!(b, "Schemes")  => { schemes_fun()  }
+            _ => { menu_stack.pop(); }
+        };
 }
 
 fn prompt_menu(menu_stack: &mut Vec<String>, menu_relations: &mut LinkedHashMap<String,Vec<String>>) -> String {
