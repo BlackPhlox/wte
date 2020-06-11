@@ -23,7 +23,32 @@ An all-in-one realtime editor for updating of Windows Terminal settings. This gi
   - Have Node.js 12 installed or later
   - Have npm (Comes with Node.js)
 # Setup
+
+Before doing anything I will highly recommend that you backup you settings.json prior to working with this project.
+
+When running src/setup.bat
+
+- Generates a config.json, which locates the folder of your settings.json (which is located here: ```%appdata%\..\Local\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\```)
+- Creates a backup of your current settings (called settings.json.pre.wte.backup in the same folder)
+- Prompted to allow administrative rights to powershell, this is for setting a enviroment variable to the projects folder. As it is not setup yet, then you can easily decline and run the project using ```cargo run```.
+
+## config.json
+WTE uses config.json to know what settings.json-file to edit. To debug I would recommend copying your settings.json and changing the settings_folder_path for debug perpose shown below. Default is to your folder of your settings.json
+
+```
+{ 
+    "settings_folder_path":"C:/Users/USERNAME/Repos/wte/src/", 
+    "asset_path":"...", 
+    "questionColor":"lightgray", 
+    "errorColor":"red" 
+} 
+```
+
 WIP
+
+## Additionally step(WIP)
+  - If you are running using the [Linux-Subsystem](https://docs.microsoft.com/en-us/windows/wsl/install-win10) you can add `alias wte='cmd.exe /c wte'` in your `~/.bashrc` file.
+
 
 # Contribution
 
