@@ -12,11 +12,21 @@ use std::any::Any;
 use std::fs;
 
 //Constants:
+static BACK: &str = "Back";
+static SAVE: &str = "Save";
+static REVERT: &str = "Revert";
+static EDIT: &str = "Edit";
+static EXIT: &str = "Exit";
 static ADD: &str = "Add";
 static REMOVE: &str = "Remove";
-static BACK: &str = "Back";
 static START_MENU: &str = "Main menu";
 static DEFAULT_PROMPT: &str = "What do you want to do?";
+static SETTINGS: &str = "Settings";
+static PROFILES: &str = "Profiles";
+static SCHEMES: &str = "Schemes";
+static SETTINGS_CONTENT: &str = "<SETTINGS_CONTENT>";
+static PROFILES_CONTENT: &str = "<PROFILES_CONTENT>";
+static SCHEMES_CONTENT: &str = "<SCHEMES_CONTENT>";
 
 macro_rules! gen_menu_path {
     ($($menu: expr;$($access:expr),*);+) => {{
@@ -91,7 +101,6 @@ fn revert_prompt(hm: &mut HashMap<String, Value>, backup_path:String, settings_f
     }
 }
 
-
 fn main() {
     //Load and set configs
     let config = read_json_from_file("./src/config.json").unwrap();
@@ -121,28 +130,23 @@ fn main() {
 
     //Setup menu
     let mut l = gen_menu_path![
-        START_MENU;"Edit","Revert","Save","Exit";
-        "Edit";BACK,"Settings","Profiles","Schemes";
-        "Settings"; ADD,REMOVE,BACK;
-        "Profiles"; ADD,REMOVE,BACK;
-        "Schemes" ; ADD,REMOVE,BACK
+        START_MENU; EDIT, REVERT,   SAVE,             EXIT;
+        EDIT      ; BACK, SETTINGS, PROFILES,         SCHEMES;
+        SETTINGS  ; ADD,  REMOVE,   SETTINGS_CONTENT, BACK;
+        PROFILES  ; ADD,  REMOVE,   PROFILES_CONTENT, BACK;
+        SCHEMES   ; ADD,  REMOVE,   SCHEMES_CONTENT,  BACK
     ];
-
-    //Add
-    //Remove
 
     //Set start position
     let mut current_menu_stack = vec![String::from(START_MENU)];
 
     //Start menu-navigation loop
     loop {
-        //println!();
-        //print_stack_ln!(current_menu_stack);
         let a = prompt_menu(&mut current_menu_stack, &mut l);
         match a {
             b if str_eq!(b, "Program1") => { program1(); continue; },
-            b if str_eq!(b, "Save") => { save_prompt(&mut hm, backup_path.clone()); continue; },
-            b if str_eq!(b, "Revert") => { hm = revert_prompt(&mut hm, backup_path.clone(), settings_path.clone()); continue; },
+            b if str_eq!(b, SAVE) => { save_prompt(&mut hm, backup_path.clone()); continue; },
+            b if str_eq!(b, REVERT) => { hm = revert_prompt(&mut hm, backup_path.clone(), settings_path.clone()); continue; },
             b if str_eq!(b, BACK) => { current_menu_stack.pop(); continue; },
             b if str_eq!(b, ADD) => {
                 m_setting_types(&mut current_menu_stack,
@@ -156,7 +160,7 @@ fn main() {
                                 || println!("{:#?}", "RPR"),
                                 || println!("{:#?}", "RSC")
                 ); continue; },
-            b if str_eq!(b, "Exit") => { break; },
+            b if str_eq!(b, EXIT) => { break; },
             _ => { current_menu_stack.push(a); continue; }
         };
     }
@@ -165,9 +169,9 @@ fn main() {
 fn m_setting_types<F1,F2,F3>(menu_stack: &mut Vec<String>, settings_fun: F1, profiles_fun: F2, schemes_fun: F3)
     where F1:FnOnce(),F2:FnOnce(),F3:FnOnce() {
         match menu_stack.last().unwrap() {
-            b if str_eq!(b, "Settings") => { settings_fun() },
-            b if str_eq!(b, "Profiles") => { profiles_fun() },
-            b if str_eq!(b, "Schemes")  => { schemes_fun()  }
+            b if str_eq!(b, SETTINGS) => { settings_fun() },
+            b if str_eq!(b, PROFILES) => { profiles_fun() },
+            b if str_eq!(b, SCHEMES)  => { schemes_fun()  }
             _ => { menu_stack.pop(); }
         };
 }
@@ -175,7 +179,7 @@ fn m_setting_types<F1,F2,F3>(menu_stack: &mut Vec<String>, settings_fun: F1, pro
 fn prompt_menu(menu_stack: &mut Vec<String>, menu_relations: &mut LinkedHashMap<String,Vec<String>>) -> String {
     let prompt_combo = menu_relations;
     let current = menu_stack.last().unwrap();//Latest pushed
-    let m = match prompt_combo.get( current) {
+    let selections = match prompt_combo.get( current) {
         Some(t) => t,
         None if current == &String::from(BACK) => prompt_combo.get(menu_stack.first().unwrap()).unwrap(), //Back selected, get previous stack and pop current
         _ => {
@@ -185,11 +189,12 @@ fn prompt_menu(menu_stack: &mut Vec<String>, menu_relations: &mut LinkedHashMap<
             prompt_combo.get(menu_stack.last().unwrap()).unwrap()
         }
     };
-    let selections: Vec<String> = m.clone();
-    let r = setup_prompt(menu_stack.last().unwrap(),(menu_stack.join(" > ")).to_string(), &selections);
 
-    let sel = &selections.get(r);
-    sel.unwrap().clone()
+    //Go though and find Settings Type Content Label and push all current settings to the menu stack
+    let index = setup_prompt(menu_stack.last().unwrap(),(menu_stack.join(" > ")).to_string(), &selections);
+
+    let selected = &selections.get(index);
+    selected.unwrap().clone()
 }
 
 fn setup_prompt(_: &str, prompt: String, s: &[String]) -> usize {
