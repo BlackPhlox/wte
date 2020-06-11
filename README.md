@@ -26,7 +26,8 @@ When running src/setup.bat
 
 - Generates a config.json, which locates the folder of your settings.json (which is located here: ```%appdata%\..\Local\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\```)
 - Creates a backup of your current settings (called settings.json.pre.wte.backup in the same folder)
-- Prompted to allow administrative rights to powershell, this is for setting a enviroment variable to the projects folder. As it is not setup yet, then you can easily decline and run the project using ```cargo run```.
+- Prompted to allow administrative rights to powershell, this is for setting a environment variable to the projects folder. As it is not setup yet, then you can easily decline and run the project using ```cargo run```.
+- Creates a .batfile that calls ```cargo run``` when typing ```wte``` (Granted that the environment variable has been set)
 
 ## config.json
 WTE uses config.json to know what settings.json-file to edit. To debug I would recommend copying your settings.json and changing the settings_folder_path for debug perpose shown below. Default is to your folder of your settings.json
