@@ -1,0 +1,3 @@
+[submodule "dialoguer"]
+	path = dialoguer
+	url = https://github.com/BlackPhlox/dialoguer
