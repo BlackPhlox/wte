@@ -37,9 +37,9 @@ echo.
 ::echo SUCCESS: Libraries was installed.
 ::echo.
 
-::echo 4. Create batfile
-::echo.
-::echo ^@echo off ^& cmd /C "cd %cd% & node index.js" > "wte.bat"
+echo 4. Create batfile
+echo.
+echo ^@echo off ^& cmd /C "cd %cd%\..\ & cargo run" > "wte.bat"
 
 echo Complete! Restart your terminal and then type "wte" to run the application
 pause
