@@ -15,9 +15,9 @@ An all-in-one realtime editor for updating of Windows Terminal settings. This gi
 
 # Prerequisites
   - Running Windows 1903 (build >= 10.0.18362.0) or later
-  - Have the latest version of Windows Terminal (Preview) installed
-  - Have Node.js 12 installed or later
-  - Have npm (Comes with Node.js)
+  - Have the latest version of Windows Terminal installed
+  - Have installed Rust 1.44.0 or later
+  
 # Setup
 
 Before doing anything I will highly recommend that you backup you settings.json prior to working with this project.
