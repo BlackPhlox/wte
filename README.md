@@ -26,7 +26,7 @@ When running src/setup.bat
 
 - Generates a config.json, which locates the folder of your settings.json (which is located here: ```%appdata%\..\Local\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\```)
 - Creates a backup of your current settings (called settings.json.pre.wte.backup in the same folder)
-- Prompted to allow administrative rights to powershell, this is for setting a environment variable to the projects folder. As it is not setup yet, then you can easily decline and run the project using ```cargo run```.
+- Prompted to allow administrative rights to powershell, this is for setting a environment variable to the projects folder. As it is not setup yet, then you can easily decline and run the project using ```cargo run```. The environment variable can be found by running ```powershell -window minimized -command "SystemPropertiesAdvanced"``` and clicking on Environment variables > System Variables > Path > Scroll to the buttom.
 - Creates a .batfile that calls ```cargo run``` when typing ```wte``` (Granted that the environment variable has been set)
 
 ## config.json
