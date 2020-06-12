@@ -10,6 +10,8 @@ use std::collections::HashMap;
 use serde_json::value::Value::Number;
 use std::any::Any;
 use std::fs;
+use core::borrow::Borrow;
+use std::convert::TryInto;
 
 //Constants:
 static BACK: &str = "Back";
@@ -24,9 +26,6 @@ static DEFAULT_PROMPT: &str = "What do you want to do?";
 static SETTINGS: &str = "Settings";
 static PROFILES: &str = "Profiles";
 static SCHEMES: &str = "Schemes";
-static SETTINGS_CONTENT: &str = "<SETTINGS_CONTENT>";
-static PROFILES_CONTENT: &str = "<PROFILES_CONTENT>";
-static SCHEMES_CONTENT: &str = "<SCHEMES_CONTENT>";
 
 macro_rules! gen_menu_path {
     ($($menu: expr;$($access:expr),*);+) => {{
@@ -132,9 +131,9 @@ fn main() {
     let mut l = gen_menu_path![
         START_MENU; EDIT, REVERT,   SAVE,             EXIT;
         EDIT      ; BACK, SETTINGS, PROFILES,         SCHEMES;
-        SETTINGS  ; ADD,  REMOVE,   SETTINGS_CONTENT, BACK;
-        PROFILES  ; ADD,  REMOVE,   PROFILES_CONTENT, BACK;
-        SCHEMES   ; ADD,  REMOVE,   SCHEMES_CONTENT,  BACK
+        SETTINGS  ; ADD,  REMOVE, BACK;
+        PROFILES  ; ADD,  REMOVE, BACK;
+        SCHEMES   ; ADD,  REMOVE,  BACK
     ];
 
     //Set start position
@@ -142,7 +141,7 @@ fn main() {
 
     //Start menu-navigation loop
     loop {
-        let a = prompt_menu(&mut current_menu_stack, &mut l);
+        let a = prompt_menu(&mut current_menu_stack, &mut l, &mut hm);
         match a {
             b if str_eq!(b, "Program1") => { program1(); continue; },
             b if str_eq!(b, SAVE) => { save_prompt(&mut hm, backup_path.clone()); continue; },
@@ -176,7 +175,7 @@ fn m_setting_types<F1,F2,F3>(menu_stack: &mut Vec<String>, settings_fun: F1, pro
         };
 }
 
-fn prompt_menu(menu_stack: &mut Vec<String>, menu_relations: &mut LinkedHashMap<String,Vec<String>>) -> String {
+fn prompt_menu(menu_stack: &mut Vec<String>, menu_relations: &mut LinkedHashMap<String,Vec<String>>, hm: &mut HashMap<String, Value>) -> String {
     let prompt_combo = menu_relations;
     let current = menu_stack.last().unwrap();//Latest pushed
     let selections = match prompt_combo.get( current) {
@@ -190,10 +189,42 @@ fn prompt_menu(menu_stack: &mut Vec<String>, menu_relations: &mut LinkedHashMap<
         }
     };
 
-    //Go though and find Settings Type Content Label and push all current settings to the menu stack
-    let index = setup_prompt(menu_stack.last().unwrap(),(menu_stack.join(" > ")).to_string(), &selections);
+    let mut sels = &mut selections.clone();
+    let mut finalsel = &mut selections.clone();
 
-    let selected = &selections.get(index);
+    //Go though and find Settings Type Content Label and push all current settings to the menu stack
+    match menu_stack.last().unwrap() {
+        b if str_eq!(b, SETTINGS) => {
+            for key in hm.keys().filter(|&e| !(e == "$schema" || e == &PROFILES.to_lowercase() || e == &SCHEMES.to_lowercase())) {
+                finalsel.insert(2, String::from(key));
+            }
+        },
+        b if str_eq!(b, PROFILES) => {
+            let val = hm.get(&PROFILES.to_lowercase()).unwrap().clone();
+            let arr : Vec<Value> = from_value(val).unwrap();
+            for key in arr {
+                let k : HashMap<String, Value> = from_value(key).unwrap();
+                let k2 : String = from_value(k.get("name").unwrap().clone()).unwrap();
+                finalsel.insert(2, k2);
+            }
+        },
+        b if str_eq!(b, SCHEMES) => {
+            let val = hm.get(&SCHEMES.to_lowercase()).unwrap().clone();
+            let arr : Vec<Value> = from_value(val).unwrap();
+            for key in arr {
+                let k : HashMap<String, Value> = from_value(key).unwrap();
+                let k2 : String = from_value(k.get("name").unwrap().clone()).unwrap();
+                finalsel.insert(2, k2);
+            }
+        },
+        _ => {}
+    }
+
+    let index = setup_prompt(menu_stack.last().unwrap(),(menu_stack.join(" > ")).to_string(), &finalsel);
+
+    //Check for setting type else menu process
+
+    let selected = &finalsel.get(index);
     selected.unwrap().clone()
 }
 
