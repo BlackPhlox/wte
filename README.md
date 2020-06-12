@@ -5,7 +5,7 @@ An all-in-one realtime editor for updating of Windows Terminal settings. This gi
 
 |Info| |
 |-------|---------|
-| GitHub | [![GitHub version](https://badge.fury.io/gh/BlackPhlox%2Fwt-editor-cli.svg)](https://badge.fury.io/gh/BlackPhlox%2Fwte) |
+| GitHub | [![GitHub version](https://badge.fury.io/gh/BlackPhlox%2Fwte.svg)](https://badge.fury.io/gh/BlackPhlox%2Fwte) |
 | Twitter     | [![Twitter Follow](https://img.shields.io/twitter/follow/darkphlox?style=social)](https://twitter.com/darkphlox)      |
 
 ## Related repositories
@@ -43,7 +43,7 @@ WTE uses config.json to know what settings.json-file to edit. To debug I would r
 
 WIP
 
-## Additionally step(WIP)
+## Additionally step
   - If you are running using the [Linux-Subsystem](https://docs.microsoft.com/en-us/windows/wsl/install-win10) you can add `alias wte='cmd.exe /c wte'` in your `~/.bashrc` file.
 
 
