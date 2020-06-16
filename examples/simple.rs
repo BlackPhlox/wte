@@ -3,18 +3,18 @@ use dialoguer::theme::ColorfulTheme;
 use serde_json::{Value, from_value};
 use serde_json::json;
 use std::collections::HashMap;
+use css_color_parser::Color as CssColor;
+use core::fmt::Pointer;
+use colors_transform::{Rgb, Color};
 
-fn main(){
-    println!("Test - None");
-    println!("{:#}",set_value_types(vec!["null"],"", None));
-    println!("{:#}",set_value_types(vec!["boolean"],"", None));
-    println!("{:#}",set_value_types(vec!["null","boolean"],"", None));
-    println!();
-    println!("Test - Null");
-    println!("{:#}",set_value_types(vec!["null"],"", Some(json![null])));
-    println!("{:#}",set_value_types(vec!["boolean"],"", Some(json![false])));
-    println!("{:#}",set_value_types(vec!["null","boolean"],"", Some(json![null])));
-}
+pub const NULL: &str = "null";
+pub const BOOL: &str = "boolean";
+pub const INT: &str = "integer";
+pub const NUM: &str = "number";
+pub const STRING: &str = "string";
+pub const COLOR: &str = "color";
+pub const OBJECT: &str = "object";
+pub const ARRAY: &str = "array";
 
 //Change value types:
 //Can be an array like [null,string]
@@ -28,6 +28,23 @@ color, (hex-code, color wheel?)
 object (editor?),
 array
 */
+
+fn main(){
+    println!("{:#}",set_value_types(vec![NULL,BOOL,INT,NUM,STRING,COLOR,OBJECT,ARRAY],"", None));
+    /*println!("Test - None");
+    println!("{:#}",set_value_types(vec!["null"],"", None));
+    println!("{:#}",set_value_types(vec!["boolean"],"", None));
+    println!("{:#}",set_value_types(vec!["null","boolean"],"", None));
+
+    println!();
+    println!("Test - Null");
+    println!("{:#}",set_value_types(vec!["null"],"", Some(json![null])));
+    println!("{:#}",set_value_types(vec!["boolean"],"", Some(json![false])));
+    println!("{:#}",set_value_types(vec!["null","boolean"],"", Some(json![null])));
+    */
+}
+
+
 
 fn set_value_types(s_arr: Vec<&str>, property_name: &str, current_value: Option<Value>) -> String{
     let properties : HashMap<String,Value> = HashMap::new();
@@ -61,12 +78,12 @@ fn set_value_type_match(s: &str, property_name: &str, properties: HashMap<String
     //Lookup for object within the specific property (using property_name)
 
     match s {
-        "null" => String::from("null"),
-        "boolean" => {
+        NULL => String::from("null"),
+        BOOL => {
             //Get prompt and current value (to set as default) from description of schema
             Confirm::new().with_prompt("Do you want to continue?").default(true).interact().unwrap().to_string()
         },
-        "integer" => {
+        INT => {
             //Get restrictions/pattern
             //Get prompt from description of schema
 
@@ -74,10 +91,10 @@ fn set_value_type_match(s: &str, property_name: &str, properties: HashMap<String
             if let Some(x) = properties.get("maximum"){}
             if let Some(x) = properties.get("minimum"){}
 
-            let name = Input::<i32>::new().with_prompt("Your name").interact().unwrap();
+            let name = Input::<i32>::new().with_prompt("Your age").interact().unwrap();
             name.to_string()
         },
-        "number" => {
+        NUM => {
             //Get restrictions/pattern
             //Get prompt from description of schema
 
@@ -85,10 +102,10 @@ fn set_value_type_match(s: &str, property_name: &str, properties: HashMap<String
             if let Some(x) = properties.get("maximum"){}
             if let Some(x) = properties.get("minimum"){}
 
-            let name = Input::<f32>::new().with_prompt("Your name").interact().unwrap();
+            let name = Input::<f32>::new().with_prompt("Your height").interact().unwrap();
             name.to_string()
         },
-        "string" => {
+        STRING => {
             //Check property name a run against lookup to check if (path, guid etc.)
 
             //if backgroundImage -> path
@@ -100,13 +117,25 @@ fn set_value_type_match(s: &str, property_name: &str, properties: HashMap<String
             let name = Input::<String>::new().with_prompt("Your name").interact().unwrap();
             name
         },
-        "color" => {
+        COLOR => {
             //Check property name a run against lookup to check if (path, guid etc.)
 
-            let name = Input::<String>::new().with_prompt("Your name").interact().unwrap();
-            name
+            let transparent_black = CssColor { r: 0, g: 0, b: 0, a: 1.0 };
+
+            let s = &css_color_parser::NAMED_COLORS;
+
+
+            let o = &css_color_parser::NAMED_COLORS_KEYS;
+
+            o.iter().for_each(|(a)|println!("{:#}",a));
+
+            let name = Input::<String>::new().with_prompt("Your favorite color").interact().unwrap();
+            let c = name.parse::<CssColor>()
+                .unwrap_or(transparent_black);
+
+            Rgb::from(c.r as f32, c.g as f32, c.b as f32).to_css_hex_string()
         },
-        "object" => {
+        OBJECT => {
             if let Some(rv) = Editor::new().edit("Enter a commit message").unwrap() {
                 println!("Your message:");
                 println!("{}", rv);
@@ -117,7 +146,7 @@ fn set_value_type_match(s: &str, property_name: &str, properties: HashMap<String
                 l.keys().last().unwrap().to_string()
             }
         },
-        "array" =>
+        ARRAY =>
             if let Some(rv) = Editor::new().edit("Enter a commit message").unwrap() {
                 println!("Your message:");
                 println!("{}", rv);

@@ -112,18 +112,8 @@ fn m_setting_types<F1,F2,F3>(menu_stack: &mut Vec<String>, settings_fun: F1, pro
         };
 }
 
-
-
-
-
-
-
-
-
 fn start_gui(){
     println!("Starting GUI Server");
 
     println!("Stopping GUI Server");
 }
-
-

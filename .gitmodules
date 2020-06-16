@@ -1,3 +1,6 @@
 [submodule "dialoguer"]
 	path = dialoguer
 	url = https://github.com/BlackPhlox/dialoguer
+[submodule "css-color-parser-rs"]
+	path = css-color-parser-rs
+	url = https://github.com/BlackPhlox/css-color-parser-rs
