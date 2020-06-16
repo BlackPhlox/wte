@@ -30,9 +30,17 @@ array
 */
 
 fn set_value_types(s_arr: Vec<&str>, property_name: &str, current_value: Option<Value>) -> String{
+    let properties : HashMap<String,Value> = HashMap::new();
     if s_arr.len() > 1 {
         //New select prompt
         //Choose of which to use
+
+        //check for oneOf
+        //if true, select which to use
+        if let Some(x) = properties.get("oneOf"){
+            //Is array
+            //Contains objects with a "type" and maybe enum if type is string
+        }
 
         let index =
             Select::with_theme(&ColorfulTheme::default())
@@ -42,28 +50,52 @@ fn set_value_types(s_arr: Vec<&str>, property_name: &str, current_value: Option<
                 .interact()
                 .unwrap();
         //When selected set that type
-        set_value_type_match(s_arr[index],property_name,current_value)
+        set_value_type_match(s_arr[index],property_name,properties,current_value)
     } else {
-        set_value_type_match(s_arr.first().unwrap(),property_name,current_value)
+        set_value_type_match(s_arr.first().unwrap(),property_name,properties,current_value)
     }
 }
 
-fn set_value_type_match(s: &str, property_name: &str, current_value: Option<Value>) -> String {
+fn set_value_type_match(s: &str, property_name: &str, properties: HashMap<String,Value>, current_value: Option<Value>) -> String {
     let l = property_name;
-    let m = match s {
+    //Lookup for object within the specific property (using property_name)
+
+    match s {
         "null" => String::from("null"),
         "boolean" => {
-            //Get prompt from description of schema
-            Confirm::new().with_prompt("Do you want to continue?").interact().unwrap().to_string()
+            //Get prompt and current value (to set as default) from description of schema
+            Confirm::new().with_prompt("Do you want to continue?").default(true).interact().unwrap().to_string()
         },
         "integer" => {
             //Get restrictions/pattern
             //Get prompt from description of schema
+
+            //Look for max and min
+            if let Some(x) = properties.get("maximum"){}
+            if let Some(x) = properties.get("minimum"){}
+
             let name = Input::<i32>::new().with_prompt("Your name").interact().unwrap();
+            name.to_string()
+        },
+        "number" => {
+            //Get restrictions/pattern
+            //Get prompt from description of schema
+
+            //Look for max and min
+            if let Some(x) = properties.get("maximum"){}
+            if let Some(x) = properties.get("minimum"){}
+
+            let name = Input::<f32>::new().with_prompt("Your name").interact().unwrap();
             name.to_string()
         },
         "string" => {
             //Check property name a run against lookup to check if (path, guid etc.)
+
+            //if backgroundImage -> path
+            //if guid -> select via definitions to current profiles guid
+
+            //Contains enum?
+            if let Some(x) = properties.get("enum"){}
 
             let name = Input::<String>::new().with_prompt("Your name").interact().unwrap();
             name
@@ -95,7 +127,11 @@ fn set_value_type_match(s: &str, property_name: &str, current_value: Option<Valu
                 let l : Vec<String> = from_value(current_value.unwrap()).unwrap();
                 l.last().unwrap().to_string()
             },
-        _ => String::from("None")
-    };
-    m
+        _ => {
+            //Lookup in schema
+            //Get "$ref":
+            //#/definitions/<DEFINITIONS_NAME>
+            String::from("None")
+        }
+    }
 }

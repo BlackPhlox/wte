@@ -9,6 +9,9 @@ edition = "2018"
 [dependencies]
 dialoguer = "0.6.2"
 linked-hash-map = "0.5.3"
+lazy_static = "1"
+css-color-parser = "0.1.2"
+webbrowser = "0.5.4"
 
 [dependencies.serde]
 version = "1.0"
