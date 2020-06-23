@@ -3,8 +3,12 @@ name = "wte"
 version = "0.0.1"
 authors = ["Black Phlox <bphlox@gmail.com>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+keywords = ["cli", "editor", "menu", "prompt", "windows", "terminal", "json", "schema"]
+license = "MIT"
+homepage = "https://github.com/BlackPhlox/wte"
+repository = "https://github.com/BlackPhlox/wte"
+documentation = "https://github.com/BlackPhlox/wte/wiki"
+readme = "README.md"
 
 [dependencies]
 dialoguer = "0.6.2"
@@ -13,6 +17,7 @@ lazy_static = "1"
 css-color-parser = "0.1.2"
 colors-transform ="0.2.11"
 webbrowser = "0.5.4"
+console ="0.11.3"
 
 [dependencies.serde]
 version = "1.0"
