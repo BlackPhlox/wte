@@ -1,4 +1,4 @@
-use dialoguer::{theme::ColorfulTheme, Select, Confirm};
+use dialoguer::{Select, Confirm};
 use linked_hash_map::LinkedHashMap;
 use std::path::Path;
 use std::error::Error;
@@ -12,277 +12,29 @@ use std::any::Any;
 use std::fs;
 use core::borrow::Borrow;
 use std::convert::TryInto;
-use lazy_static::lazy_static;
 use core::slice::SliceIndex;
-use dialoguer::theme::{Theme};
+use dialoguer::theme::{Theme, ColorfulTheme};
 use std::{fmt, io};
-use console::{Style, StyledObject, style, Term};
+use lazy_static::lazy_static;
+use console::{Style, StyledObject, style, Term, Emoji};
 
-/* Term THEME */
+use wte::all::diff::{
+    //Menu display
+    MENU_SEPARATOR,
+    //Menu items
+    BACK, SAVE, REVERT, EDIT, EXIT, ADD_REMOVE,
+    START_MENU, MENU_ITEM,
+    GUI, DEFAULT_PROMPT,
+    PROFILES, SCHEMES, SETTINGS,
+    //Schema Definitions
+    DEF, PROP, GLOBAL, TYPE,
+    //Filepath Definitions
+    CONFIG_PATH, CONFIG_FOLDER_PATH, SETTINGS_JSON, DEBUG_SCHEMA_PATH,
+    BACKUP_EXTENSION,
+};
 
-pub(crate) struct WTETermThemeRenderer<'a> {
-    term: &'a Term,
-    theme: &'a dyn Theme,
-    height: usize,
-    prompt_height: usize,
-    prompts_reset_height: bool,
-}
-
-impl<'a> WTETermThemeRenderer<'a> {
-    pub fn new(term: &'a Term, theme: &'a dyn Theme) -> WTETermThemeRenderer<'a> {
-        WTETermThemeRenderer {
-            term,
-            theme,
-            height: 0,
-            prompt_height: 0,
-            prompts_reset_height: true,
-        }
-    }
-
-    pub fn set_prompts_reset_height(&mut self, val: bool) {
-        self.prompts_reset_height = val;
-    }
-
-    pub fn term(&self) -> &Term {
-        self.term
-    }
-
-    pub fn add_line(&mut self) {
-        self.height += 1;
-    }
-
-    fn write_formatted_str<
-        F: FnOnce(&mut WTETermThemeRenderer, &mut dyn fmt::Write) -> fmt::Result,
-    >(
-        &mut self,
-        f: F,
-    ) -> io::Result<()> {
-        let mut buf = String::new();
-        f(self, &mut buf).map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
-        self.height += buf.chars().filter(|&x| x == '\n').count();
-        self.term.write_str(&buf)
-    }
-
-    fn write_formatted_line<
-        F: FnOnce(&mut WTETermThemeRenderer, &mut dyn fmt::Write) -> fmt::Result,
-    >(
-        &mut self,
-        f: F,
-    ) -> io::Result<()> {
-        let mut buf = String::new();
-        f(self, &mut buf).map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
-        self.height += buf.chars().filter(|&x| x == '\n').count() + 1;
-        self.term.write_line(&buf)
-    }
-
-    fn write_formatted_prompt<
-        F: FnOnce(&mut WTETermThemeRenderer, &mut dyn fmt::Write) -> fmt::Result,
-    >(
-        &mut self,
-        f: F,
-    ) -> io::Result<()> {
-        self.write_formatted_line(f)?;
-        if self.prompts_reset_height {
-            self.prompt_height = self.height;
-            self.height = 0;
-        }
-        Ok(())
-    }
-
-    pub fn error(&mut self, err: &str) -> io::Result<()> {
-        self.write_formatted_line(|this, buf| this.theme.format_error(buf, err))
-    }
-
-    pub fn confirm_prompt(&mut self, prompt: &str, default: Option<bool>) -> io::Result<()> {
-        self.write_formatted_str(|this, buf| this.theme.format_confirm_prompt(buf, prompt, default))
-    }
-
-    pub fn confirm_prompt_selection(&mut self, prompt: &str, sel: bool) -> io::Result<()> {
-        self.write_formatted_prompt(|this, buf| {
-            this.theme.format_confirm_prompt_selection(buf, prompt, sel)
-        })
-    }
-
-    pub fn input_prompt(&mut self, prompt: &str, default: Option<&str>) -> io::Result<()> {
-        self.write_formatted_str(|this, buf| this.theme.format_input_prompt(buf, prompt, default))
-    }
-
-    pub fn input_prompt_selection(&mut self, prompt: &str, sel: &str) -> io::Result<()> {
-        self.write_formatted_prompt(|this, buf| {
-            this.theme.format_input_prompt_selection(buf, prompt, sel)
-        })
-    }
-
-    pub fn password_prompt(&mut self, prompt: &str) -> io::Result<()> {
-        self.write_formatted_str(|this, buf| {
-            write!(buf, "\r")?;
-            this.theme.format_password_prompt(buf, prompt)
-        })
-    }
-
-    pub fn password_prompt_selection(&mut self, prompt: &str) -> io::Result<()> {
-        self.write_formatted_prompt(|this, buf| {
-            this.theme.format_password_prompt_selection(buf, prompt)
-        })
-    }
-
-    pub fn select_prompt(&mut self, prompt: &str) -> io::Result<()> {
-        self.write_formatted_prompt(|this, buf| this.theme.format_select_prompt(buf, prompt))
-    }
-
-    pub fn select_prompt_selection(&mut self, prompt: &str, sel: &str) -> io::Result<()> {
-        /*
-        self.write_formatted_prompt(|this, buf| {
-            this.theme.format_select_prompt_selection(buf, prompt, sel)
-        })*/
-        self.write_formatted_line(|a,b|Ok(()))
-    }
-
-    pub fn select_prompt_item(&mut self, text: &str, active: bool) -> io::Result<()> {
-        self.write_formatted_line(|this, buf| {
-            this.theme.format_select_prompt_item(buf, text, active)
-        })
-    }
-
-    pub fn multi_select_prompt(&mut self, prompt: &str) -> io::Result<()> {
-        self.write_formatted_prompt(|this, buf| this.theme.format_multi_select_prompt(buf, prompt))
-    }
-
-    pub fn multi_select_prompt_selection(&mut self, prompt: &str, sel: &[&str]) -> io::Result<()> {
-        self.write_formatted_prompt(|this, buf| {
-            this.theme
-                .format_multi_select_prompt_selection(buf, prompt, sel)
-        })
-    }
-
-    pub fn multi_select_prompt_item(
-        &mut self,
-        text: &str,
-        checked: bool,
-        active: bool,
-    ) -> io::Result<()> {
-        self.write_formatted_line(|this, buf| {
-            this.theme
-                .format_multi_select_prompt_item(buf, text, checked, active)
-        })
-    }
-
-    pub fn sort_prompt(&mut self, prompt: &str) -> io::Result<()> {
-        self.write_formatted_prompt(|this, buf| this.theme.format_sort_prompt(buf, prompt))
-    }
-
-    pub fn sort_prompt_selection(&mut self, prompt: &str, sel: &[&str]) -> io::Result<()> {
-        self.write_formatted_prompt(|this, buf| {
-            this.theme.format_sort_prompt_selection(buf, prompt, sel)
-        })
-    }
-
-    pub fn sort_prompt_item(&mut self, text: &str, picked: bool, active: bool) -> io::Result<()> {
-        self.write_formatted_line(|this, buf| {
-            this.theme
-                .format_sort_prompt_item(buf, text, picked, active)
-        })
-    }
-
-    pub fn clear(&mut self) -> io::Result<()> {
-        self.term
-            .clear_last_lines(self.height + self.prompt_height)?;
-        self.height = 0;
-        Ok(())
-    }
-
-    pub fn clear_preserve_prompt(&mut self, size_vec: &[usize]) -> io::Result<()> {
-        let mut new_height = self.height;
-        //Check each item size, increment on finding an overflow
-        for size in size_vec {
-            if *size > self.term.size().1 as usize {
-                new_height += 1;
-            }
-        }
-        self.term.clear_last_lines(new_height)?;
-        self.height = 0;
-        Ok(())
-    }
-}
-
-/*
-use crate::util::{read_json_from_file,write,path_exists,save_prompt,revert_prompt};
-use crate::menu::{prompt_menu};
-use crate::menu::menu_macro;
-*/
-
-macro_rules! gen_menu_path {
-        ($($menu: expr;$($access:expr),*);+) => {{
-            let mut map = ::linked_hash_map::LinkedHashMap::new();
-                $(
-                    let mut v = vec![];
-                    $(v.push(String::from($access));)*
-                    map.insert(String::from($menu), v);
-                )*
-            map
-        }}
-}
-
-macro_rules! print_stack_ln {
-        ($a: expr) => {
-            $a.clone().iter_mut().for_each(| e | { print!("{} > ", e ) });
-            println!();
-        }
-}
-
-macro_rules! str_eq {
-        ($a: expr,$b: expr) => {
-            $a == $b
-        }
-}
-
-//Menu display
-pub const MENU_SEPARATOR: &str = " > ";
-
-//Menu items:
-pub const BACK: &str = "Back";
-pub const SAVE: &str = "Save";
-pub const REVERT: &str = "Revert";
-pub const EDIT: &str = "Edit";
-pub const EXIT: &str = "Exit";
-pub const ADD_REMOVE: &str = "Add/Remove";
-//static ADD: &str = "Add";
-//static REMOVE: &str = "Remove";
-pub const START_MENU: &str = "Main menu";
-pub const GUI: &str = "GUI";
-pub const DEFAULT_PROMPT: &str = "What do you want to do?";
-pub const SETTINGS: &str = "Settings";
-pub const PROFILES: &str = "Profiles";
-pub const SCHEMES: &str = "Schemes";
-pub const MENU_ITEM:  &'static [&str] = &[BACK,SAVE,REVERT,EDIT,EXIT,GUI,ADD_REMOVE/*ADD,REMOVE*/,START_MENU,SETTINGS,PROFILES,SCHEMES];
-
-//Types
-pub const NULL: &str = "null";
-pub const BOOL: &str = "boolean";
-pub const INT: &str = "integer";
-pub const NUM: &str = "number";
-pub const STRING: &str = "string";
-pub const COLOR: &str = "color";
-pub const OBJECT: &str = "object";
-pub const ARRAY: &str = "array";
-
-//Schema Definitions
-pub const DEF: &str = "definitions";
-pub const PROP: &str = "properties";
-pub const GLOBAL: &str = "Globals";
-pub const TYPE: &str = "type";
-
-//Filepath Definitions
-pub const SETTINGS_JSON: &str = "settings.json";
-pub const CONFIG_PATH: &str = "./src/config.json";
-pub const DEBUG_SCHEMA_PATH: &str = "./src/wt_schema.json";
-pub const CONFIG_FOLDER_PATH: &str = "settings_folder_path";
-pub const BACKUP_EXTENSION: &str = ".backup";
-
-/*
-use crate::util::util::{path_exists,read_json_from_file,write,save_prompt,revert_prompt};
-use wte::menu::{prompt_menu,path_exists,read_json_from_file,write,save_prompt,revert_prompt};
-*/
+use wte::{str_eq,gen_menu_path,print_stack_ln};
+use wte::all::util::{read_json_from_file, write, path_exists, save_prompt, revert_prompt};
 
 fn main() {
     //Load and set configs
@@ -364,9 +116,6 @@ fn start_gui(){
 
     println!("Stopping GUI Server");
 }
-
-
-//MENU
 
 pub fn prompt_menu(
     comb_stack: &mut Vec<(String,usize)>,
@@ -525,69 +274,11 @@ fn map_name(prop: HashMap<String,Value>, keyword: &str) -> Vec<String>{
 
 fn setup_prompt(_: &str, prompt: String, s: &[String], i: &mut Vec<usize>) -> usize {
     let def = if let Some(x) = i.pop() {x} else { 0usize };
-    let te = Term::buffered_stderr();
-    //let wte_theme_render = WTETermThemeRenderer::new(&te.clone(),&ColorfulTheme::default());
     Select::with_theme(&ColorfulTheme::default())
         //.set_on_render(|i| println!("Selected {}",i))
         .with_prompt(prompt)
         .default(def)
         .items(&s)
-        .interact_on(&te.clone())
-        .unwrap()
-}
-
-//UTIL
-
-pub fn read_json_from_file<P: AsRef<Path>>(path: P) -> Result<HashMap<String, Value>, Box<dyn Error>> {
-    // Open the file in read-only mode with buffer.
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
-    let u = serde_json::from_reader(reader)?;
-    Ok(u)
-}
-
-pub fn set_json_value(hm: &mut HashMap<String, Value>, k: &str, v:Value) {
-    if hm.get(k).unwrap().type_id() == v.type_id() {
-        hm.insert(String::from(k), v);
-        //Callback - value changed
-    }
-}
-
-pub fn write(hm: &mut HashMap<String, Value>, filepath: &str){
-    let data = serde_json::to_string_pretty(&hm).unwrap();
-    let mut f = File::create(filepath).expect("Unable to create file");
-    f.write_all(data.as_bytes()).expect("Unable to write data");
-}
-
-//[Shepmaster 2015](https://stackoverflow.com/questions/32384594/how-to-check-whether-a-path-exists)
-pub fn path_exists(path: &str) -> bool {
-    fs::metadata(path).is_ok()
-}
-
-pub fn save_prompt(hm: &mut HashMap<String, Value>, backup_path:String) {
-    if Confirm::new()
-        .with_prompt("Are you sure you want save current changes to backup? Previous backup will be overwritten")
-        .default(false)
         .interact()
-        .unwrap() {
-        write(hm,backup_path.as_str());
-        println!("Current settings saved to backup");
-    } else {
-        println!("Save cancelled");
-    }
-}
-
-pub fn revert_prompt(hm: &mut HashMap<String, Value>, backup_path:String, settings_folder: String) -> HashMap<String, Value>{
-    if Confirm::new()
-        .with_prompt("Are you sure you want to load backup? Any current changes will be deleted")
-        .default(false).interact().unwrap() {
-        //Load backup
-        println!("Backup loaded");
-        let backup = read_json_from_file(backup_path).unwrap();
-        write(&mut backup.clone(),settings_folder.as_str());
-        backup
-    } else {
-        println!("Revert cancelled");
-        hm.clone()
-    }
+        .unwrap()
 }

@@ -6,7 +6,16 @@ use std::collections::HashMap;
 use css_color_parser::Color as CssColor;
 use core::fmt::Pointer;
 use colors_transform::{Rgb, Color};
-use crate::main::{NULL,BOOL,INT,NUM,STRING,COLOR,OBJECT,ARRAY};
+
+
+/*
+use wte::all::diff::{
+    //WT Types
+    NULL,BOOL,INT,NUM,STRING,COLOR,OBJECT,ARRAY
+};
+*/
+
+//potential : https://github.com/Marwes/schemafy
 
 pub fn set_value_types(s_arr: Vec<&str>, property_name: &str, current_value: Option<Value>) -> String{
     let properties : HashMap<String,Value> = HashMap::new();
