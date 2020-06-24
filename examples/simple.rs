@@ -1,13 +1,7 @@
 extern crate wte;
 
-#[path = "../src/all/diff.rs"]
-mod diff;
-
-#[path = "../src/all/edit.rs"]
-mod edit;
-
-use edit::{set_value_types};
-use diff::{NULL,BOOL,INT,NUM,STRING,COLOR,OBJECT,ARRAY};
+use wte::all::editor::{set_value_types};
+use wte::all::diff::{NULL,BOOL,INT,NUM,STRING,COLOR,OBJECT,ARRAY};
 
 //Change value types:
 //Can be an array like [null,string]

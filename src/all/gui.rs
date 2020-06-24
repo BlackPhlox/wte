@@ -1,34 +1,39 @@
-use std::io::prelude::*;
-use std::net::TcpListener;
-use std::net::TcpStream;
-use std::{fs, thread};
-use webbrowser;
+use std::net::{TcpListener, TcpStream, Incoming};
+use std::{fs, thread, io};
+use std::io::{Write, Read, BufRead};
 use std::time::Duration;
-//use curl::easy;
-//use curl::easy::{Easy, Easy2};
+use std::sync::mpsc::TryRecvError;
+use std::sync::mpsc;
 
-fn main() {
+pub fn start_gui_server(){
+    println!("Starting GUI Server");
+
+    println!("Press enter to terminate GUI Server");
+    let (tx, rx) = mpsc::channel();
+
     let ip_port = String::from("127.0.0.1:7878");
+    let mut gui_server = GuiServer::new(ip_port.clone());
+    let listener = gui_server.start(true);
 
-    let mut o = GuiServer::new(ip_port.clone());
+    thread::spawn(move ||
+        for stream in listener.incoming() {
+            let stream = stream.unwrap();
+            handle_connection(stream);
+            match rx.try_recv() {
+                Ok(_) | Err(TryRecvError::Disconnected) => {
+                    println!("GUI Server is terminating.");
+                    break;
+                }
+                Err(TryRecvError::Empty) => {}
+            }
+        }
+    );
 
-    o.start(true);
-
-    o.stop();
-    /*
-    let mut easy = Easy::new();
-    easy.get(true).unwrap();
-    easy.url(&format!("{}{}{}","http://",ip_port,"/stop")).unwrap();
-    easy.perform().unwrap();
-    println!("{}",easy.response_code().unwrap());
-    */
-
-    //thread::sleep(Duration::from_secs(5));
-
-    //reqwest::get(&format!("{}{}{}","http://",ip_port,"/stop"));
-
+    let mut line = String::new();
+    let stdin = io::stdin();
+    let _ = stdin.lock().read_line(&mut line);
+    let _ = tx.send(());
 }
-
 
 pub struct GuiServer {
     ip_port: String
@@ -45,23 +50,18 @@ impl<'a> GuiServer {
         println!("{}",&format!("{}{}{}","http://",self.ip_port,"/stop"));
     }
 
-    pub fn start(&mut self, open:bool) -> &mut GuiServer {
+    pub fn start(&mut self, open:bool) -> TcpListener {
         let listener = TcpListener::bind(&self.ip_port).unwrap();
 
         if open {
             if webbrowser::open(&format!("{}{}","http://",self.ip_port)).is_ok() { }
         }
 
-        for stream in listener.incoming() {
-            let stream = stream.unwrap();
-            let stop = handle_connection(stream);
-            if stop {break;}
-        }
-        self
+        listener
     }
 }
 
-fn handle_connection(mut stream: TcpStream) -> bool {
+fn handle_connection(mut stream: TcpStream) {
     let mut buffer = [0; 512*4];
     stream.read(&mut buffer).unwrap();
     let get = b"GET / HTTP/1.1\r\n";
@@ -75,13 +75,9 @@ fn handle_connection(mut stream: TcpStream) -> bool {
         ("HTTP/1.1 200 OK\r\n\r\n", "./src/wt_schema.json")
     } else if buffer.starts_with(settings) {
         ("HTTP/1.1 200 OK\r\n\r\n", "./src/settings.json")
-    } else if buffer.starts_with(stop) {
-        ("HTTP/1.1 200 OK\r\n\r\n", "stop")
     } else {
         ("HTTP/1.1 404 NOT FOUND\r\n\r\n", "./src/index.html")
     };
-
-    if filename == "stop" {return true}
 
     let contents = fs::read_to_string(filename).unwrap();
 
@@ -89,5 +85,4 @@ fn handle_connection(mut stream: TcpStream) -> bool {
 
     stream.write(response.as_bytes()).unwrap();
     stream.flush().unwrap();
-    false
 }

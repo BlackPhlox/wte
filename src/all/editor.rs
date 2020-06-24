@@ -7,15 +7,11 @@ use css_color_parser::Color as CssColor;
 use core::fmt::Pointer;
 use colors_transform::{Rgb, Color};
 
-
-/*
-use wte::all::diff::{
+use crate::all::diff::{
     //WT Types
     NULL,BOOL,INT,NUM,STRING,COLOR,OBJECT,ARRAY
 };
-*/
 
-//potential : https://github.com/Marwes/schemafy
 
 pub fn set_value_types(s_arr: Vec<&str>, property_name: &str, current_value: Option<Value>) -> String{
     let properties : HashMap<String,Value> = HashMap::new();
@@ -77,7 +73,7 @@ fn set_value_type_match(s: &str, property_name: &str, properties: HashMap<String
             name.to_string()
         },
         STRING => {
-            //Check property name a run against lookup to check if (path, guid etc.)
+            //Check property name a run against lookup to check if (path, enum, guid etc.)
 
             //if backgroundImage -> path
             //if guid -> select via definitions to current profiles guid
@@ -118,6 +114,12 @@ fn set_value_type_match(s: &str, property_name: &str, properties: HashMap<String
             }
         },
         ARRAY =>
+        /*
+            "items": {
+                "$ref": "#/definitions/Keybinding"
+            },
+            "type": "array"
+        */
             if let Some(rv) = Editor::new().edit("Enter a commit message").unwrap() {
                 println!("Your message:");
                 println!("{}", rv);
@@ -131,6 +133,13 @@ fn set_value_type_match(s: &str, property_name: &str, properties: HashMap<String
             //Lookup in schema
             //Get "$ref":
             //#/definitions/<DEFINITIONS_NAME>
+
+            /*
+            let a = hm.get("$ref").unwrap();
+            let p : String = from_value(a.clone()).unwrap();
+            let np = p.replace("#/definitions/", "");
+            //"$ref": "#/definitions/ProfileGuid"
+            */
             String::from("None")
         }
     }

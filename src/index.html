@@ -24,7 +24,7 @@
 
             fetch("settings.json")
                 .then(response => response.json())
-                .then(settingsFileObject => editor.setValue(settingsFileObject))
+                .then(settingsFileObject => editor.setValue(settingsFileObject));
 
             //Server loads settings.json //takes backup
             //Set the settings.json

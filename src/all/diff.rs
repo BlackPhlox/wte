@@ -16,6 +16,7 @@ pub const DEFAULT_PROMPT: &str = "What do you want to do?";
 pub const SETTINGS: &str = "Settings";
 pub const PROFILES: &str = "Profiles";
 pub const SCHEMES: &str = "Schemes";
+
 pub const MENU_ITEM:  &'static [&str] = &[BACK,SAVE,REVERT,EDIT,EXIT,GUI,ADD_REMOVE/*ADD,REMOVE*/,START_MENU,SETTINGS,PROFILES,SCHEMES];
 
 //Types
@@ -29,6 +30,7 @@ pub const OBJECT: &str = "object";
 pub const ARRAY: &str = "array";
 
 //Schema Definitions
+pub const SCHEMA: &str = "$schema";
 pub const DEF: &str = "definitions";
 pub const PROP: &str = "properties";
 pub const GLOBAL: &str = "Globals";
