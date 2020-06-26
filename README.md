@@ -16,7 +16,7 @@ WTE is an all-in-one realtime editor for updating of Windows Terminal settings. 
 
 # Prerequisites
   - Running Windows 1903 (build >= 10.0.18362.0) or later
-  - Have the latest version of Windows Terminal installed
+  - Have installed Windows Terminal Version 1.0.1401.0 or later
   - Have installed Rust 1.44.0 or later
   
 # Setup
