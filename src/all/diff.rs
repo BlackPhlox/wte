@@ -33,8 +33,15 @@ pub const ARRAY: &str = "array";
 pub const SCHEMA: &str = "$schema";
 pub const DEF: &str = "definitions";
 pub const PROP: &str = "properties";
-pub const GLOBAL: &str = "Globals";
 pub const TYPE: &str = "type";
+
+pub const GLOBAL: &str = "Globals";
+pub const PROFILE: &str = "Profile";
+
+//Settings definitions
+pub const S_PROFILE: &str = "profiles";
+pub const S_SCHEME: &str = "schemes";
+//Nothing for Global, as it is root
 
 //Filepath Definitions
 pub const SETTINGS_JSON: &str = "settings.json";

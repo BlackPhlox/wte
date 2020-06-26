@@ -1,10 +1,11 @@
-use std::net::{TcpListener, TcpStream, Incoming};
+use std::net::{TcpListener, TcpStream};
 use std::{fs, thread, io};
 use std::io::{Write, Read, BufRead};
-use std::time::Duration;
 use std::sync::mpsc::TryRecvError;
 use std::sync::mpsc;
 
+/// Starts a minimal static serve server that servers index.html along with the required json files
+/// On any change the server receives the changed json and updates settings.json in realtime
 pub fn start_gui_server(){
     println!("Starting GUI Server");
 
@@ -28,7 +29,6 @@ pub fn start_gui_server(){
             }
         }
     );
-
     let mut line = String::new();
     let stdin = io::stdin();
     let _ = stdin.lock().read_line(&mut line);
@@ -46,17 +46,11 @@ impl<'a> GuiServer {
         }
     }
 
-    pub fn stop(&mut self){
-        println!("{}",&format!("{}{}{}","http://",self.ip_port,"/stop"));
-    }
-
     pub fn start(&mut self, open:bool) -> TcpListener {
         let listener = TcpListener::bind(&self.ip_port).unwrap();
-
         if open {
             if webbrowser::open(&format!("{}{}","http://",self.ip_port)).is_ok() { }
         }
-
         listener
     }
 }

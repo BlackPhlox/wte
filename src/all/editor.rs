@@ -1,10 +1,8 @@
 use dialoguer::{Select, Confirm, Input, Editor};
 use dialoguer::theme::ColorfulTheme;
 use serde_json::{Value, from_value};
-use serde_json::json;
 use std::collections::HashMap;
 use css_color_parser::Color as CssColor;
-use core::fmt::Pointer;
 use colors_transform::{Rgb, Color};
 
 use crate::all::diff::{
@@ -94,7 +92,7 @@ fn set_value_type_match(s: &str, property_name: &str, properties: HashMap<String
 
             let o = &css_color_parser::NAMED_COLORS_KEYS;
 
-            o.iter().for_each(|(a)|println!("{:#}",a));
+            o.iter().for_each(|a|println!("{:#}",a));
 
             let name = Input::<String>::new().with_prompt("Your favorite color").interact().unwrap();
             let c = name.parse::<CssColor>()

@@ -1,7 +1,7 @@
 use linked_hash_map::LinkedHashMap;
 use std::collections::HashMap;
 use serde_json::{Value, from_value};
-use dialoguer::Select;
+use dialoguer::{Select, MultiSelect, Confirm};
 use dialoguer::theme::ColorfulTheme;
 use lazy_static::lazy_static;
 
@@ -18,6 +18,8 @@ use crate::all::diff::{
     //Filepath Definitions
     CONFIG_PATH, CONFIG_FOLDER_PATH, SETTINGS_JSON, DEBUG_SCHEMA_PATH,
     BACKUP_EXTENSION,
+
+    S_PROFILE,S_SCHEME
 };
 
 
@@ -58,29 +60,17 @@ pub fn prompt_menu(
             }
         },
         b if str_eq!(b, PROFILES) => {
-            let val = hm.get(&PROFILES.to_lowercase()).unwrap().clone();
-            let arr : Vec<Value> = from_value(val).unwrap();
-            for key in arr {
-                let k : HashMap<String, Value> = from_value(key).unwrap();
-                let k2 : String = from_value(k.get("name").unwrap().clone()).unwrap();
-                finalsel.insert(1, k2);
-            }
+            get_name_list(finalsel,hm,&PROFILES.to_lowercase(),true);
         },
         b if str_eq!(b, SCHEMES) => {
-            let val = hm.get(&SCHEMES.to_lowercase()).unwrap().clone();
-            let arr : Vec<Value> = from_value(val).unwrap();
-            for key in arr {
-                let k : HashMap<String, Value> = from_value(key).unwrap();
-                let k2 : String = from_value(k.get("name").unwrap().clone()).unwrap();
-                finalsel.insert(1, k2);
-            }
+            get_name_list(finalsel,hm,&SCHEMES.to_lowercase(),true);
         },
         _ => {}
     }
 
     //Get missing properties for Add_Remove
 
-    let index = setup_prompt(menu_type,(menu_stack.join(MENU_SEPARATOR)).to_string(), &finalsel, index_stuff);
+    let index = setup_menu_prompt(menu_type, (menu_stack.join(MENU_SEPARATOR)).to_string(), &finalsel, index_stuff);
 
     //Check for setting type else menu process
     let selected = finalsel.get(index).unwrap();
@@ -117,18 +107,17 @@ pub fn prompt_menu(
     (selected.clone(),index)
 }
 
-fn get_globals_map(wt: &HashMap<String, Value>, keyword: &str) -> HashMap<String,Value>{
-    let map = get_def_map(wt,GLOBAL);
-    let properties : HashMap<String,Value> = from_value(map.get(PROP).unwrap().clone()).unwrap();
-    let p = properties.clone();
-    //let setting_value_type : Vec<String> = from_value(map.get("type").unwrap().clone()).unwrap();
-
-
-    println!("{:#?}", get_keyword_editable_types(properties, keyword, wt));
-
-    p
-    //let m : HashMap<String,Value> = from_value(wt.get("definitions").unwrap().clone()).unwrap();
-    //from_value(m.get(keyword).unwrap().clone()).unwrap()
+fn get_name_list<'a>(finalsel: &'a mut Vec<String>, hm: &'a mut HashMap<String, Value>, keyword:&'a str, insert:bool) -> &'a mut Vec<String> {
+    let val = hm.get(keyword).unwrap().clone();
+    let arr : Vec<Value> = from_value(val).unwrap();
+    for key in arr {
+        let k : HashMap<String, Value> = from_value(key).unwrap();
+        let k2 : String = from_value(k.get("name").unwrap().clone()).unwrap();
+        if insert
+        { finalsel.insert(1, k2); }
+        else { finalsel.push(k2); }
+    }
+    finalsel
 }
 
 fn parse_def(props: HashMap<String, Value>, wt: &HashMap<String, Value>) -> (HashMap<String,Value>, String) {
@@ -149,14 +138,82 @@ fn get_def_map(wt: &HashMap<String, Value>, keyword: &str) -> HashMap<String,Val
     from_value(get_def_hashmap(wt).get(keyword).unwrap().clone()).unwrap()
 }
 
+//Usage:
+//get_prop_map(wt,GLOBALS)
+//get_prop_map(wt,PROFILE)
+//get_prop_map(wt,SCHEME_LIST)
+fn get_prop_map(wt: &HashMap<String, Value>, main_def: &str) -> HashMap<String,Value>{
+    let map = get_def_map(wt,main_def);
+    let properties : HashMap<String,Value> = from_value(map.get(PROP).unwrap().clone()).unwrap();
+    properties
+}
+
+fn get_globals_map(wt: &HashMap<String, Value>, keyword: &str) -> HashMap<String,Value>{
+    let global_props = get_prop_map(wt,GLOBAL);
+    println!("{:#?}", get_keyword_editable_types(global_props.clone(), keyword, wt));
+    global_props
+}
+
+//Edit profile guids -> Create new or use existing profile
+//Have a selection prompt with one selection called new, that prompts a guid editor
+fn get_profile_guids() -> Vec<(String,String)>{
+    vec![(String::from("name: CMD"), String::from("{0caa0dad-35be-5f56-a8ff-afceeeaa6101}"))]
+}
+
+/// Get the properties and if they are currently being used in the settings.json
+fn get_add_remove_properties(wt: &HashMap<String, Value>, hm: &mut HashMap<String, Value>, keyword: &str) -> Vec<(String,bool)> {
+    let prop_map = get_prop_map(wt,keyword);
+    let key = match keyword {
+        SCHEMES => Some(S_SCHEME),
+        PROFILES => Some(S_PROFILE),
+        _ => None
+    };
+
+    let newhm;
+    if key.is_some() {
+        let y = key.unwrap();
+        //let hm2 : Vec<Value> = from_value(hm.get(y));
+
+    } else {
+        newhm = hm.clone();
+    }
+
+    let o = prop_map
+        .iter()
+        .map(|(a, _)|{
+            let k = a.clone();
+            let nk : Option<_> = SETTINGS_MAP.get(k.as_str());
+            //Go to the correct dir for hm, "profiles" for PROFILE
+            //And "schemes" for SCHEME
+            //And nothing for GLOBAL/Settings
+            if nk.is_some() {
+                let v : &str = nk.unwrap();
+                (v.to_string(),hm.contains_key(v))
+            } else {
+                let l = k.to_owned();
+                let la = l.to_owned();
+                (l,hm.contains_key(&la))
+            }
+        })
+        .collect::<Vec<_>>();
+    println!("{:#?}",o);
+    o
+}
+
+
+
 lazy_static!{
+    /// Some definitions in WT is may need translation as the schema is still in development
     static ref SETTINGS_MAP: HashMap<&'static str, &'static str> = {
         let mut map = HashMap::new();
         map.insert("requestedTheme", "theme");
+        map.insert("theme", "requestedTheme");
         map
     };
 }
 
+/// Gets the list of types a property has, it does this by recursion if
+/// It hits a $ref
 fn get_keyword_editable_types(prop: HashMap<String,Value>, keyword: &str, wt: &HashMap<String, Value>) -> Vec<String>{
     let s = prop.get(keyword);
     println!("{:#?}",s);
@@ -185,13 +242,70 @@ fn get_keyword_editable_types(prop: HashMap<String,Value>, keyword: &str, wt: &H
     }
 }
 
-fn setup_prompt(_: &str, prompt: String, s: &[String], i: &mut Vec<usize>) -> usize {
+/// Sets up the prompt for menu selection
+fn setup_menu_prompt(_: &str, prompt: String, s: &[String], i: &mut Vec<usize>) -> usize {
     let def = if let Some(x) = i.pop() {x} else { 0usize };
     Select::with_theme(&ColorfulTheme::default())
         //.set_on_render(|i| println!("Selected {}",i))
+        .no_confirmation()
         .with_prompt(prompt)
         .default(def)
         .items(&s)
         .interact()
         .unwrap()
+}
+
+/// Sets up a multi_select prompt when selecting add_remove menu item for profiles
+pub fn setup_remove_profile_prompt(hm: &mut HashMap<String, Value>, keyword: &str){
+    let mut a = vec![];
+    let list = get_name_list(&mut a,hm,keyword,false);
+    let mut defaults = (0..list.len()).map(|x| true).collect::<Vec<_>>();
+
+    let selections = MultiSelect::with_theme(&ColorfulTheme::default())
+        .with_prompt("Pick profiles you want to remove")
+        .paged(true)
+        .no_confirmation()
+        .items(list.as_ref())
+        .defaults(defaults.as_ref())
+        .interact()
+        .unwrap();
+
+    if Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt(
+            format!("Are you sure you want to remove {:#?}",
+                    list.iter()
+                        .enumerate()
+                        .filter(|(i, a)|(!selections.contains(i)))
+                        .map(|(_,b)|b).collect::<Vec<&String>>()
+            )
+        )
+        .default(false)
+        .interact().is_ok()
+    {
+        println!("Confirmed")
+    }
+    //print_stack_ln!(selections);
+}
+
+/// Sets up a multi_select prompt when selecting add_remove menu item for properties
+pub fn setup_add_remove_prop_prompt(wt: &HashMap<String, Value>, hm: &mut HashMap<String, Value>, keyword: &str){
+    let props = get_add_remove_properties(wt,hm,keyword);
+    //props.iter().for_each(| (e,b) |{print!("{}({}) > ", e, b )});
+    let (a,b) : (Vec<String>,Vec<bool>) = props.iter().map(|&(ref a, ref b)| (a.clone(), b.clone())).unzip();
+
+    let selections = MultiSelect::with_theme(&ColorfulTheme::default())
+        .with_prompt("Pick your properties you want to have")
+        .paged(true)
+        .no_confirmation()
+        .items(a.as_ref())
+        .defaults(b.as_ref())
+        .interact()
+        .unwrap();
+}
+
+fn from_slice(bytes: &[u8]) -> [u8; 32] {
+    let mut array = [0; 32];
+    let bytes = &bytes[..array.len()]; // panics if not enough data
+    array.copy_from_slice(bytes);
+    array
 }

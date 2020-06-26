@@ -18,24 +18,11 @@ use std::{fmt, io};
 use lazy_static::lazy_static;
 use console::{Style, StyledObject, style, Term, Emoji};
 
-use wte::all::diff::{
-    //Menu display
-    MENU_SEPARATOR,
-    //Menu items
-    BACK, SAVE, REVERT, EDIT, EXIT, ADD_REMOVE,
-    START_MENU, MENU_ITEM,
-    GUI, DEFAULT_PROMPT,
-    PROFILES, SCHEMES, SETTINGS,
-    //Schema Definitions
-    DEF, PROP, GLOBAL, TYPE,
-    //Filepath Definitions
-    CONFIG_PATH, CONFIG_FOLDER_PATH, SETTINGS_JSON, DEBUG_SCHEMA_PATH,
-    BACKUP_EXTENSION,
-};
+use wte::all::diff::{MENU_SEPARATOR, BACK, SAVE, REVERT, EDIT, EXIT, ADD_REMOVE, START_MENU, MENU_ITEM, GUI, DEFAULT_PROMPT, PROFILES, SCHEMES, SETTINGS, DEF, PROP, GLOBAL, TYPE, CONFIG_PATH, CONFIG_FOLDER_PATH, SETTINGS_JSON, DEBUG_SCHEMA_PATH, BACKUP_EXTENSION, PROFILE, S_PROFILE, S_SCHEME};
 
 use wte::{str_eq,gen_menu_path,print_stack_ln};
 use wte::all::util::{read_json_from_file, write, path_exists, save_prompt, revert_prompt};
-use wte::all::menu::prompt_menu;
+use wte::all::menu::{prompt_menu, setup_add_remove_prop_prompt, setup_remove_profile_prompt};
 use wte::all::gui::start_gui_server;
 
 fn main() {
@@ -92,9 +79,9 @@ fn main() {
             b if str_eq!(b, BACK) => { current_menu_stack.pop(); current_selection_index_stack.pop(); continue; },
             b if str_eq!(b, ADD_REMOVE) => { //Use multi select in combination with default of the schema
                 wt_setting_types(&mut current_menu_stack,
-                                 || println!("{:#?}", "ARSE"),
-                                 || println!("{:#?}", "ARPR"),
-                                 || println!("{:#?}", "ARSC")
+                                 || {println!("{:#?}", "ARSE"); setup_add_remove_prop_prompt(&wt, &mut hm.clone(), GLOBAL)},
+                                 || {println!("{:#?}", "ARPR"); setup_remove_profile_prompt(&mut hm.clone(), S_PROFILE) /*setup_add_remove_prop_prompt(&wt, &mut hm.clone(), PROFILE)*/},
+                                 || {println!("{:#?}", "ARSC"); setup_remove_profile_prompt(&mut hm.clone(), S_SCHEME)}
                 ); continue; },
             b if str_eq!(b, EXIT) => { break; },
             _ => {
@@ -104,14 +91,6 @@ fn main() {
             }
         };
     }
-}
-
-fn wt_get_active_properties() -> Vec<String>{
-    vec![String::from("Active properties"),String::from("initialCols")]
-}
-
-fn wt_get_missing_properties() -> Vec<String>{
-    vec![String::from("Missing properties"),String::from("disabledProfileSources")]
 }
 
 fn wt_setting_types<F1,F2,F3>(menu_stack: &mut Vec<String>, settings_fun: F1, profiles_fun: F2, schemes_fun: F3)

@@ -17,7 +17,7 @@ array
 */
 
 fn main(){
-    println!("{:#}",set_value_types(vec![NULL,BOOL,INT,NUM,STRING,COLOR,OBJECT,ARRAY],"", None));
+    //println!("{:#}",set_value_types(vec![NULL,BOOL,INT,NUM,STRING,COLOR,OBJECT,ARRAY],"", None));
     /*println!("Test - None");
     println!("{:#}",set_value_types(vec!["null"],"", None));
     println!("{:#}",set_value_types(vec!["boolean"],"", None));
