@@ -75,6 +75,8 @@ fn set_value_type_match(s: &str, property_name: &str, properties: HashMap<String
 
             //if backgroundImage -> path
             //if guid -> select via definitions to current profiles guid
+            //let vs = get_profile_guids(properties);
+            //println!("{:#?}",vs);
 
             //Contains enum?
             if let Some(x) = properties.get("enum"){}

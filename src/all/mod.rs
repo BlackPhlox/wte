@@ -6,6 +6,7 @@ pub mod menu;
 pub mod editor;
 pub mod util;
 pub mod gui;
+pub mod setup;
 
 
 

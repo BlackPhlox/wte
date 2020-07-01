@@ -8,8 +8,8 @@ pub const REVERT: &str = "Revert";
 pub const EDIT: &str = "Edit";
 pub const EXIT: &str = "Exit";
 pub const ADD_REMOVE: &str = "Add/Remove";
-//static ADD: &str = "Add";
-//static REMOVE: &str = "Remove";
+pub const REMOVE: &str = "Remove";
+pub const ADD: &str = "Add";
 pub const START_MENU: &str = "Main menu";
 pub const GUI: &str = "GUI";
 pub const DEFAULT_PROMPT: &str = "What do you want to do?";
@@ -17,7 +17,7 @@ pub const SETTINGS: &str = "Settings";
 pub const PROFILES: &str = "Profiles";
 pub const SCHEMES: &str = "Schemes";
 
-pub const MENU_ITEM:  &'static [&str] = &[BACK,SAVE,REVERT,EDIT,EXIT,GUI,ADD_REMOVE/*ADD,REMOVE*/,START_MENU,SETTINGS,PROFILES,SCHEMES];
+pub const MENU_ITEM:  &'static [&str] = &[BACK,SAVE,REVERT,EDIT,EXIT,GUI,REMOVE,ADD,ADD_REMOVE,START_MENU,SETTINGS,PROFILES,SCHEMES];
 
 //Types
 pub const NULL: &str = "null";
@@ -31,6 +31,7 @@ pub const ARRAY: &str = "array";
 
 //Schema Definitions
 pub const SCHEMA: &str = "$schema";
+pub const REF: &str = "$ref";
 pub const DEF: &str = "definitions";
 pub const PROP: &str = "properties";
 pub const TYPE: &str = "type";
@@ -49,6 +50,14 @@ pub const CONFIG_PATH: &str = "./src/config.json";
 pub const DEBUG_SCHEMA_PATH: &str = "./src/wt_schema.json";
 pub const CONFIG_FOLDER_PATH: &str = "settings_folder_path";
 pub const BACKUP_EXTENSION: &str = ".backup";
+
+//Embedded filepath definitions
+pub const EMBEDDED_FOLDER: &str = "src/";
+pub const INDEX: &str = "index.html";
+pub const SETUP: &str = "setup.bat";
+
+//Mutable values
+pub static mut SETTINGS_PATH: &'static str = "";
 
 #[macro_export]
 macro_rules! gen_menu_path {

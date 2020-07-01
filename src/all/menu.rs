@@ -1,6 +1,6 @@
 use linked_hash_map::LinkedHashMap;
 use std::collections::HashMap;
-use serde_json::{Value, from_value};
+use serde_json::{Value, from_value, Number};
 use dialoguer::{Select, MultiSelect, Confirm};
 use dialoguer::theme::ColorfulTheme;
 use lazy_static::lazy_static;
@@ -9,17 +9,17 @@ use crate::all::diff::{
     //Menu display
     MENU_SEPARATOR,
     //Menu items
-    BACK, SAVE, REVERT, EDIT, EXIT, ADD_REMOVE,
+    BACK, SAVE, REVERT, EDIT, EXIT, REMOVE,
     START_MENU, MENU_ITEM,
     GUI, DEFAULT_PROMPT,
     PROFILES, SCHEMES, SETTINGS,
     //Schema Definitions
-    SCHEMA, DEF, PROP, GLOBAL, TYPE,
+    SCHEMA, DEF, REF, PROP, GLOBAL, TYPE,
     //Filepath Definitions
     CONFIG_PATH, CONFIG_FOLDER_PATH, SETTINGS_JSON, DEBUG_SCHEMA_PATH,
     BACKUP_EXTENSION,
 
-    S_PROFILE,S_SCHEME
+    S_PROFILE, S_SCHEME
 };
 
 
@@ -38,8 +38,29 @@ pub fn prompt_menu(
         Some(t) => (t,0),
         None if current == &String::from(BACK) => {(prompt_combo.get(fst).unwrap(), 0)}, //Back selected, get previous stack and pop current
         _ => {
-            //Not found, pop from stack and go back to previous/last item in the stack
-            eprintln!("Error : Item not found");
+            //Check prev
+            let mut not_found = false;
+            if menu_stack.len() > 2 {
+                let prev_menu_string = menu_stack[menu_stack.len() - 2].clone();
+                match prev_menu_string {
+                    //Return the correct stuff
+                    b if str_eq!(b,"Settings") => {
+                        println!("Process as settings");
+                        match menu_stack.last().unwrap() {
+                            //Use "$ref" and "type" from schema
+                            b if str_eq!(b,"defaultProfile") => {println!("GUID");}
+                            _ => {not_found = true;}
+                        }
+                    },
+                    b if str_eq!(b,"Profiles") => { println!("Process as profile");not_found = true;},
+                    b if str_eq!(b,"Schemes") => { println!("Process as schemes");not_found = true;}
+                    _ => {not_found = true;}
+                }
+            }
+            //Fallen though because: not found
+            if not_found {eprintln!("Error : Item not found");}
+
+            //Pop from stack and go back to previous/last item in the stack
             menu_stack.pop();
             let old_menu_stack = menu_stack.last().unwrap();
             (prompt_combo.get(old_menu_stack).unwrap(),0)
@@ -50,6 +71,8 @@ pub fn prompt_menu(
     let finalsel = &mut selections.clone();
 
     let menu_type = menu_stack.last().unwrap();
+
+    //println!("{:#?}",menu_type);
 
     //Go though and find Settings Type Content Label and push all current settings to the menu stack
     match menu_type {
@@ -68,8 +91,6 @@ pub fn prompt_menu(
         _ => {}
     }
 
-    //Get missing properties for Add_Remove
-
     let index = setup_menu_prompt(menu_type, (menu_stack.join(MENU_SEPARATOR)).to_string(), &finalsel, index_stuff);
 
     //Check for setting type else menu process
@@ -84,14 +105,15 @@ pub fn prompt_menu(
 
     if MENU_ITEM.contains(&&***&selected){
         //Menu Item
-
+        println!("Menu item");
     } else {
         //Settings Item
         if str_eq!(menu_type, SETTINGS){
             //println!("{:?}",get_def_map(wt, "ProfileGuid").keys());
 
-            let v = get_globals_map(wt, selected).keys();
             //println!("{:?}",get_globals_map(wt, selected).keys());
+            //println!("{:#?}", get_globals_map(wt, selected).keys());
+            println!("Settings item");
         }
 
     }
@@ -121,7 +143,7 @@ fn get_name_list<'a>(finalsel: &'a mut Vec<String>, hm: &'a mut HashMap<String, 
 }
 
 fn parse_def(props: HashMap<String, Value>, wt: &HashMap<String, Value>) -> (HashMap<String,Value>, String) {
-    let a = props.get("$ref").unwrap();
+    let a = props.get(REF).unwrap();
     //println!("{:#?}",a);
     let p : String = from_value(a.clone()).unwrap();
     //println!("{:#?}",p);
@@ -142,27 +164,36 @@ fn get_def_map(wt: &HashMap<String, Value>, keyword: &str) -> HashMap<String,Val
 //get_prop_map(wt,GLOBALS)
 //get_prop_map(wt,PROFILE)
 //get_prop_map(wt,SCHEME_LIST)
-fn get_prop_map(wt: &HashMap<String, Value>, main_def: &str) -> HashMap<String,Value>{
+fn get_prop_obj(wt: &HashMap<String, Value>, main_def: &str) -> HashMap<String,Value>{
     let map = get_def_map(wt,main_def);
     let properties : HashMap<String,Value> = from_value(map.get(PROP).unwrap().clone()).unwrap();
     properties
 }
 
 fn get_globals_map(wt: &HashMap<String, Value>, keyword: &str) -> HashMap<String,Value>{
-    let global_props = get_prop_map(wt,GLOBAL);
-    println!("{:#?}", get_keyword_editable_types(global_props.clone(), keyword, wt));
+    let global_props = get_prop_obj(wt, GLOBAL);
     global_props
 }
 
 //Edit profile guids -> Create new or use existing profile
 //Have a selection prompt with one selection called new, that prompts a guid editor
-fn get_profile_guids() -> Vec<(String,String)>{
-    vec![(String::from("name: CMD"), String::from("{0caa0dad-35be-5f56-a8ff-afceeeaa6101}"))]
+pub fn get_profile_guids(hm: &HashMap<String, Value>) -> Vec<(String,String)>{
+    let val = hm.get(S_PROFILE).unwrap().clone();
+    let arr : Vec<Value> = from_value(val).unwrap();
+
+    let mut guids = vec![];
+    for key in arr {
+        let k : HashMap<String, Value> = from_value(key).unwrap();
+        let k2 : String = from_value(k.get("name").unwrap().clone()).unwrap();
+        let k3 : String = from_value(k.get("guid").unwrap().clone()).unwrap();
+        guids.push((k2,k3));
+    }
+    guids
 }
 
 /// Get the properties and if they are currently being used in the settings.json
 fn get_add_remove_properties(wt: &HashMap<String, Value>, hm: &mut HashMap<String, Value>, keyword: &str) -> Vec<(String,bool)> {
-    let prop_map = get_prop_map(wt,keyword);
+    let prop_map = get_prop_obj(wt, keyword);
     let key = match keyword {
         SCHEMES => Some(S_SCHEME),
         PROFILES => Some(S_PROFILE),
@@ -196,11 +227,9 @@ fn get_add_remove_properties(wt: &HashMap<String, Value>, hm: &mut HashMap<Strin
             }
         })
         .collect::<Vec<_>>();
-    println!("{:#?}",o);
+    //println!("{:#?}",o);
     o
 }
-
-
 
 lazy_static!{
     /// Some definitions in WT is may need translation as the schema is still in development
@@ -216,7 +245,6 @@ lazy_static!{
 /// It hits a $ref
 fn get_keyword_editable_types(prop: HashMap<String,Value>, keyword: &str, wt: &HashMap<String, Value>) -> Vec<String>{
     let s = prop.get(keyword);
-    println!("{:#?}",s);
     if let Some(ref s) = s {
 
         let hm :HashMap<String,Value> = from_value(s.clone().clone()).unwrap();
@@ -238,6 +266,7 @@ fn get_keyword_editable_types(prop: HashMap<String,Value>, keyword: &str, wt: &H
             get_keyword_editable_types(sh, keyword.as_str(), wt)
         }
     } else {
+        //println!("{:#?}{:#?}",prop,keyword);
         get_keyword_editable_types(prop, SETTINGS_MAP.get(keyword).unwrap(), wt)
     }
 }
@@ -269,6 +298,8 @@ pub fn setup_remove_profile_prompt(hm: &mut HashMap<String, Value>, keyword: &st
         .defaults(defaults.as_ref())
         .interact()
         .unwrap();
+
+    if selections.len() == list.len(){ return }
 
     if Confirm::with_theme(&ColorfulTheme::default())
         .with_prompt(
