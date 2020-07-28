@@ -1,6 +1,6 @@
 <img width="1906" alt="Artboard2@2x" src="https://user-images.githubusercontent.com/25123512/84819266-0357a280-b018-11ea-9007-d826f3fff4e3.png">
 
-WTE is an all-in-one realtime editor for updating of Windows Terminal settings. This gif is showing wt-editor-cli, a prototype of wte written in node.js. The goal is to create an .exe that can run either as a cli as shown and or host a local static serve and use [json-editor](https://github.com/json-editor/json-editor) to function as a gui.
+WTE is an all-in-one realtime editor for updating of Windows Terminal settings. This gif is showing [wt-editor-cli](https://github.com/BlackPhlox/wt-editor-cli), a prototype of wte written in node.js. The goal is to create an .exe that can run either as a cli as shown and or host a local static serve and use [json-editor](https://github.com/json-editor/json-editor) to function as a [gui](https://github.com/BlackPhlox/wt-editor-gui).
 
 ![wt-editor-cli-showcase](https://user-images.githubusercontent.com/25123512/68077919-ba2a4980-fdcc-11e9-879f-6e1fecb6bb20.gif)
 
